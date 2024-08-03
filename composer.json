@@ -1,0 +1,18 @@
+{
+    "name": "wesone/wyne",
+    "description": "A basic HTTP request handler for PHP.",
+    "type": "library",
+    "autoload": {
+        "psr-4": {
+            "wesone\\Wyne\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "wesone"
+        }
+    ],
+    "require": {
+        "php": "^8.2.0"
+    }
+}
