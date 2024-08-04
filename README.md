@@ -11,6 +11,7 @@ A basic HTTP request handler for PHP.
 3. [IController](#icontroller) - Controller interface for the route
 4. [Request](#request) - A request instance will be passed to the controller
 5. [Response](#response) - A response instance will be passed to the controller
+6. [Validator](#validator) - A class to validate user input against a validation schema
 
 ## Router 
 The router handles the HTTP request and calls the desired controller. 
@@ -266,3 +267,79 @@ It has the following methods to construct a response for the HTTP request:
 - `set(array $headers)` - To send multiple headers (e.g. `set(['Content-Type' => 'application/json', 'Content-Length' => 42])`).
 - `send(string $data)` - Add data to the response body.
 - `json(mixed $data)` - Send json encoded data as response body. This will also set the content type of the response to `application/json`
+
+## Validator
+The validator can be used to validate the user's input (inside the request body or request query) against a [schema](#schema).
+
+Simply call the `validate` method and provide the user input and a schema. The validator will return the validated input. It will automatically strip unknown values that are not part of the schema.
+
+The validator will throw an error if the validation failed.
+
+### Schema
+The schema is an array of key value pairs where the key is the name of the desired property of the input and the value is one of
+- A filter type ID (`int`) see [PHP's filter constant variables](#https://www.php.net/manual/de/filter.filters.php)
+- A custom filter type (`string`) see [custom types](#custom-types)
+- An array with the properties
+    - `type` (`int | string`) - The filter type
+    - `options` (`mixed`) - Optional options array or a specific option for the used filter type
+    - `flags` (`int`) - Optional flags (see [PHP's filter constant variables](#https://www.php.net/manual/de/filter.filters.php))
+
+Additionally every filter type can have the option `nullable` (`boolean`) to allow the value `null`.
+
+```php
+$schema = [
+    'name' => [
+        'type' => X_FILTER_VALIDATE_STRING,
+        'options' => [
+            'trim' => true,
+            'max_length' => 128
+        ]
+    ],
+    'age' => FILTER_VALIDATE_INT,
+    'gender' => [
+        'type' => X_FILTER_VALIDATE_STRING,
+        'options' => [
+            'oneOf' => ['male', 'female', 'other', 'N/A']
+        ]
+    ],
+    'description' => [
+        'type' => X_FILTER_VALIDATE_STRING,
+        'options' => [
+            'optional' => true,
+            'trim' => true,
+            'min_length' => 0,
+            'max_length' => 4096
+        ]
+    ]
+];
+
+$result = Validator::validate($req->body, $schema);
+```
+
+### Custom types
+There are custom filter type constants available that are not covered by PHP's filter types.
+
+#### `X_FILTER_VALIDATE_STRING`
+Used for string validation.
+
+Options:
+- default (`mixed`) - If the key is not set
+- trim (`boolean`) - If `true`, trim the value
+- toUpperCase (`boolean`) - If `true`, convert to upper case
+- toLowerCase (`boolean`) - If `true`, convert to lower case
+- oneOf (`array`) - Value must be inside the oneOf array
+- length (`int`) - Specify exact string length
+- min_length (`int`) - Specify min string length (default is 1)
+- max_length (`int`) - Specify max string length
+
+#### `X_FILTER_VALIDATE_ARRAY`
+Used for array validation.
+
+Options:
+- default (`mixed`) - If the key is not set
+- length (`int`) - Specify exact array length
+- min_length (`int`) - Specify min array length
+- max_length (`int`) - Specify max array length
+- shape (`array`) - A schema to validate the array against
+- of (`array`) - A schema to validate each array item against
+
